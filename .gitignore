@@ -1,0 +1,5 @@
+.venv/
+__pycache__/
+*.py[cod]
+**/.DS_Store
+API_Health_Check_Technical_Specification_v1.pdf
