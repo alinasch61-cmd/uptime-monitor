@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import CheckConstraint, DateTime, Enum, ForeignKey, String
+from sqlalchemy import CheckConstraint, DateTime, Enum, ForeignKey, Index, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -18,11 +18,21 @@ class CheckResult(Base):
             "status_code >= 100 AND status_code <= 599",
             name="ck_check_point_status_code_range",
         ),
+        Index(
+            "ix_endpoint_id_checked_at",
+            "endpoint_id",
+            "checked_at"
+        ),
+        Index(
+            "ix_checked_at",
+            "checked_at",
+            postgresql_using="brin"
+        ),
     )
     id: Mapped[int] = mapped_column(primary_key=True)
     endpoint_id: Mapped[int] = mapped_column(ForeignKey("endpoint.id", ondelete="CASCADE"))
     checked_at: Mapped[datetime] = mapped_column(
-        DateTime,
+        DateTime(timezone=True),
         nullable=True
     )
     latency_ms: Mapped[int] = mapped_column(nullable=True)

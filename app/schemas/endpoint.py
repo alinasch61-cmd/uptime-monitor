@@ -12,8 +12,8 @@ class NormalizedError(Enum):
     UNKNOWN_ERROR = 4
 
 class EndpointUpdate(BaseModel):
-    check_frequency_seconds: int = Field(ge=120)
-    is_paused: bool
+    check_frequency_seconds: int = Field(ge=120) | None = None
+    is_paused: bool | None = None
 
 class EndpointCreate(EndpointUpdate):
     url: str
