@@ -8,6 +8,7 @@ from app.config import settings
 engine = create_engine(settings.database_url, echo=True, pool_pre_ping=True)
 SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
 
+
 def get_db() -> Generator[Session]:
     db = SessionLocal()
     try:

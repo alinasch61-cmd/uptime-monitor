@@ -17,8 +17,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 
 if TYPE_CHECKING:
-    from app.models.user import User
     from app.models.check_result import CheckResult
+    from app.models.user import User
 
 
 class Endpoint(Base):
@@ -41,25 +41,22 @@ class Endpoint(Base):
         Index(
             "ix_endpoint_next_check_at_active",
             "next_check_at",
-            postgresql_where=text("is_paused = false")
+            postgresql_where=text("is_paused = false"),
         ),
     )
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"), index=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("user.id", ondelete="CASCADE"), index=True
+    )
     url: Mapped[str] = mapped_column(String(2000))
     expected_status_code: Mapped[int]
     check_frequency_seconds: Mapped[int]
     next_check_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     is_paused: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        nullable=False
+        DateTime(timezone=True), server_default=func.now(), nullable=False
     )
-    user: Mapped["User"] = relationship(back_populates="endpoints")
-    check_results: Mapped[list["CheckResult"]] = relationship(
-        back_populates="endpoint", 
-        cascade="all, delete", 
-        passive_deletes=True
+    user: Mapped[User] = relationship(back_populates="endpoints")
+    check_results: Mapped[list[CheckResult]] = relationship(
+        back_populates="endpoint", cascade="all, delete", passive_deletes=True
     )
-    

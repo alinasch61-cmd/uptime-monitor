@@ -9,6 +9,7 @@ class Status(Enum):
     ORANGE = "orange"
     RED = "red"
 
+
 class CheckResultResponse(BaseModel):
     checked_at: datetime
     latency_ms: int | None

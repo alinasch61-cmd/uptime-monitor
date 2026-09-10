@@ -16,12 +16,8 @@ class User(Base):
     username: Mapped[str] = mapped_column(unique=True)
     password_hash: Mapped[str] = mapped_column(String(64))
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        nullable=False
+        DateTime(timezone=True), server_default=func.now(), nullable=False
     )
-    endpoints: Mapped[list["Endpoint"]] = relationship(
-        back_populates="user", 
-        cascade="all, delete", 
-        passive_deletes=True
+    endpoints: Mapped[list[Endpoint]] = relationship(
+        back_populates="user", cascade="all, delete", passive_deletes=True
     )

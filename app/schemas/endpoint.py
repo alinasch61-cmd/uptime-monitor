@@ -11,16 +11,18 @@ class NormalizedError(Enum):
     TLS_ERROR = 3
     UNKNOWN_ERROR = 4
 
+
 class EndpointUpdate(BaseModel):
-    check_frequency_seconds: int = Field(ge=120) | None = None
+    check_frequency_seconds: int | None = Field(ge=120, default=None)
     is_paused: bool | None = None
+
 
 class EndpointCreate(EndpointUpdate):
     url: str
     expected_status_code: int = Field(ge=100, le=599)
 
+
 class EndpointResponse(EndpointCreate):
     id: int
     next_check_at: datetime
     created_at: datetime
-    
