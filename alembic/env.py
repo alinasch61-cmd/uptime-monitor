@@ -3,8 +3,14 @@ from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 
 from alembic import context
-from app.config import settings
+from app.core.config import settings
 from app.db.base import Base
+from app.models.check_result import (
+    CheckResult,  # noqa: F401 — imported only so CheckResult registers on Base.metadata
+)
+from app.models.endpoint import (
+    Endpoint,  # noqa: F401 — imported only so Endpoint registers on Base.metadata
+)
 from app.models.user import (
     User,  # noqa: F401 — imported only so User registers on Base.metadata
 )

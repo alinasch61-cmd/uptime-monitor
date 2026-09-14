@@ -30,4 +30,4 @@ class CheckResult(Base):
     status_code: Mapped[int] = mapped_column(nullable=True)
     result_status: Mapped[Status] = mapped_column(Enum(Status))
     error_type: Mapped[str] = mapped_column(String(255))
-    endpoint: Mapped[Endpoint] = relationship(back_populates="check_results")
+    endpoint: Mapped["Endpoint"] = relationship(back_populates="check_results")  # noqa: UP037

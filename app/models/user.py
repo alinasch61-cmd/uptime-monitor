@@ -14,10 +14,10 @@ class User(Base):
     __tablename__ = "user"
     id: Mapped[int] = mapped_column(primary_key=True)
     username: Mapped[str] = mapped_column(unique=True)
-    password_hash: Mapped[str] = mapped_column(String(64))
+    password_hash: Mapped[str] = mapped_column(String(255))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
-    endpoints: Mapped[list[Endpoint]] = relationship(
+    endpoints: Mapped[list["Endpoint"]] = relationship(  # noqa: UP037
         back_populates="user", cascade="all, delete", passive_deletes=True
     )

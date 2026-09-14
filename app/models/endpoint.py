@@ -56,7 +56,7 @@ class Endpoint(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
-    user: Mapped[User] = relationship(back_populates="endpoints")
-    check_results: Mapped[list[CheckResult]] = relationship(
+    user: Mapped["User"] = relationship(back_populates="endpoints")  # noqa: UP037
+    check_results: Mapped[list["CheckResult"]] = relationship(  # noqa: UP037
         back_populates="endpoint", cascade="all, delete", passive_deletes=True
     )

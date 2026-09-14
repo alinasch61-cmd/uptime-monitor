@@ -1,27 +1,36 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Body, Path, Query
-from schemas.check_result import CheckResultResponse, Status
-from schemas.endpoint import EndpointCreate, EndpointResponse, EndpointUpdate
+from fastapi import APIRouter, Body, Depends, HTTPException, Path, Query, status
 
-router = APIRouter(prefix="/endpoints", tags=["endpoints"])
+from app.core.security import oauth2_scheme
+from app.schemas.check_result import CheckResultResponse, Status
+from app.schemas.endpoint import EndpointCreate, EndpointResponse, EndpointUpdate
+
+router = APIRouter(
+    prefix="/endpoints", tags=["endpoints"], dependencies=[Depends(oauth2_scheme)]
+)
 
 
-@router.get("/")
+@router.get("/", response_model=list[EndpointResponse])
 async def read_endpoint_list() -> list[EndpointResponse]:
     return []
 
 
-@router.get("/{endpoint_id}")
-async def read_endpoint(endpoint_id: Annotated[int, Path()]) -> EndpointResponse | None:
+@router.get("/{endpoint_id}", response_model=EndpointResponse | None)
+async def read_endpoint(
+    endpoint_id: Annotated[int, Path()],
+) -> EndpointResponse | None:
     return None
 
 
-@router.post("/", status_code=201)
+@router.post("/", status_code=201, response_model=EndpointResponse)
 async def write_endpoint(
     endpoint: Annotated[EndpointCreate, Body()],
 ) -> EndpointResponse:
-    pass
+    raise HTTPException(
+        status_code=status.HTTP_501_NOT_IMPLEMENTED,
+        detail="This method is not implemented yet",
+    )
 
 
 @router.patch("/{endpoint_id}", status_code=204)
@@ -37,12 +46,15 @@ async def delete_endpoint(endpoint_id: Annotated[int, Path()]) -> None:
     return
 
 
-@router.get("/{endpoint_id}/status")
+@router.get("/{endpoint_id}/status", response_model=CheckResultResponse)
 async def read_status(endpiont_id: Annotated[int, Path()]) -> CheckResultResponse:
-    pass
+    raise HTTPException(
+        status_code=status.HTTP_501_NOT_IMPLEMENTED,
+        detail="This method is not implemented yet",
+    )
 
 
-@router.get("/{endpoint_id}/history")
+@router.get("/{endpoint_id}/history", response_model=list[CheckResultResponse])
 async def read_history(
     endpoint_id: Annotated[int, Path()],
     limit: Annotated[int, Query(ge=10, le=100)] = 50,
