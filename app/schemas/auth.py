@@ -6,13 +6,8 @@ class RegisterRequest(BaseModel):
     password: str
 
 
-class LoginRequest(BaseModel):
-    username: str
-    password: str
-
-
 class TokenResponse(BaseModel):
-    token: str
+    access_token: str
     token_type: str = "bearer"
 
 

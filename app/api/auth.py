@@ -1,14 +1,20 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.core.security import hash_pasword
+from app.core.security import (
+    DUMMY_HASH,
+    create_access_token,
+    get_password_hash,
+    verify_password_hash,
+)
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.auth import (
-    LoginRequest,
     RegisterRequest,
     RegisterResponse,
     TokenResponse,
@@ -33,7 +39,9 @@ def register_user(
     user: Annotated[RegisterRequest, Body()],
     db: Annotated[Session, Depends(get_db)],
 ) -> RegisterResponse:
-    user_model = User(username=user.username, password_hash=hash_pasword(user.password))
+    user_model = User(
+        username=user.username, password_hash=get_password_hash(user.password)
+    )
 
     try:
         db.add(user_model)
@@ -53,9 +61,33 @@ def register_user(
     return RegisterResponse(id=user_model.id, username=user_model.username)
 
 
-@router.post("/login", response_model=TokenResponse)
-async def login_user(user: Annotated[LoginRequest, Body()]) -> TokenResponse:
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="This method is not implemented yet",
-    )
+def authenticate_user(username: str, user_password: str, db: Session) -> bool:
+    stmt = select(User.password_hash).where(User.username == username)
+    passw_in_db: str | None = db.scalars(stmt).first()
+
+    if passw_in_db is None:
+        verify_password_hash(user_password, DUMMY_HASH)
+        return False
+
+    return verify_password_hash(user_password, passw_in_db)
+
+
+@router.post(
+    "/login",
+    response_model=TokenResponse,
+    responses={
+        status.HTTP_401_UNAUTHORIZED: {"description": "Invalid username or password"}
+    },
+)
+def login_user(
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    db: Annotated[Session, Depends(get_db)],
+) -> TokenResponse:
+    if not authenticate_user(form_data.username, form_data.password, db):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    return TokenResponse(access_token=create_access_token(form_data.username))
