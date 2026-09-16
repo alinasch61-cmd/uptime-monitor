@@ -1,13 +1,43 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Path, Query, status
+from sqlalchemy.orm import Session
 
 from app.core.security import oauth2_scheme
+from app.db.session import get_db
 from app.schemas.check_result import CheckResultResponse, Status
 from app.schemas.endpoint import EndpointCreate, EndpointResponse, EndpointUpdate
+from app.services.auth import get_current_user
+
+
+def require_authenticated_user(
+    token: Annotated[str | None, Depends(oauth2_scheme)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    if token is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication token is required",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    current_user = get_current_user(token, db)
+    if current_user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
 
 router = APIRouter(
-    prefix="/endpoints", tags=["endpoints"], dependencies=[Depends(oauth2_scheme)]
+    prefix="/endpoints",
+    tags=["endpoints"],
+    dependencies=[Depends(require_authenticated_user)],
+    responses={
+        500: {"description": "Internal Server Error"},
+        401: {"description": "Could not validate credentials"},
+    },
 )
 
 

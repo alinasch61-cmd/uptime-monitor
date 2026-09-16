@@ -1,4 +1,5 @@
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import jwt
 from fastapi.security import OAuth2PasswordBearer
@@ -6,9 +7,13 @@ from pwdlib import PasswordHash
 
 from app.core.config import settings
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login", auto_error=False)
 
 _password_hasher = PasswordHash.recommended()
+
+
+class InvalidTokenError(Exception):
+    pass
 
 
 def get_password_hash(password: str) -> str:
@@ -30,3 +35,14 @@ def create_access_token(username: str) -> str:
     }
 
     return jwt.encode(token_data, settings.secret_key, algorithm=_JWT_ALGORITHM)
+
+
+def decode_access_token(token: str) -> dict[str, Any]:
+    try:
+        decoded_token = jwt.decode(
+            token, settings.secret_key, algorithms=_JWT_ALGORITHM
+        )
+    except jwt.InvalidTokenError:
+        raise InvalidTokenError
+
+    return decoded_token
