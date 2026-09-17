@@ -46,7 +46,7 @@ class Endpoint(Base):
     )
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(
-        ForeignKey("user.id", ondelete="CASCADE"), index=True
+        ForeignKey("monitor_user.id", ondelete="CASCADE"), index=True
     )
     url: Mapped[str] = mapped_column(String(2000))
     expected_status_code: Mapped[int]

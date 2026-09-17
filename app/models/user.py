@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 
 class User(Base):
-    __tablename__ = "user"
+    __tablename__ = "monitor_user"
     id: Mapped[int] = mapped_column(primary_key=True)
     username: Mapped[str] = mapped_column(unique=True)
     password_hash: Mapped[str] = mapped_column(String(255))
