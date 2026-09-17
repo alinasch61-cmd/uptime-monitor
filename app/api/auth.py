@@ -19,7 +19,9 @@ from app.services.user import UserExistsError, create_user
 router = APIRouter(
     prefix="/auth",
     tags=["auth"],
-    responses={500: {"description": "Internal Server Error"}},
+    responses={
+        status.HTTP_500_INTERNAL_SERVER_ERROR: {"description": "Internal Server Error"}
+    },
 )
 
 
