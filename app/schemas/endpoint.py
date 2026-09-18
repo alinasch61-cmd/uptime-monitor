@@ -1,7 +1,11 @@
+import ipaddress
+import socket
 from datetime import datetime
 from enum import Enum
+from typing import Self
+from urllib.parse import urlparse
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class NormalizedError(Enum):
@@ -18,6 +22,39 @@ class EndpointUpdate(BaseModel):
 
 
 class EndpointCreate(BaseModel):
+    @model_validator(mode="after")
+    def validate_url(self) -> Self:
+        parsed_url = urlparse(self.url)
+
+        if parsed_url.scheme not in ("http", "https"):
+            raise ValueError("Only http and https URLs are allowed")
+
+        if not parsed_url.hostname:
+            raise ValueError("Hostname is not provided")
+
+        info_lines = socket.getaddrinfo(
+            parsed_url.hostname,
+            parsed_url.port or (443 if parsed_url.scheme == "https" else 80),
+            type=socket.SOCK_STREAM,
+        )
+
+        for info in info_lines:
+            ip = ipaddress.ip_address(info[4][0])
+
+            if any(
+                [
+                    ip.is_loopback,
+                    ip.is_reserved,
+                    ip.is_unspecified,
+                    ip.is_private,
+                    ip.is_multicast,
+                    ip.is_link_local,
+                ]
+            ):
+                raise ValueError(f"Target resolves to blocked IP: {ip}")
+
+        return self
+
     check_frequency_seconds: int = Field(ge=120, default=120)
     is_paused: bool = False
     url: str
