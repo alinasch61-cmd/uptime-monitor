@@ -21,7 +21,14 @@ class EndpointUpdate(BaseModel):
     is_paused: bool | None = None
 
 
-class EndpointCreate(BaseModel):
+class EndpointBase(BaseModel):
+    check_frequency_seconds: int = Field(ge=120, default=120)
+    is_paused: bool = False
+    url: str
+    expected_status_code: int = Field(ge=100, le=599, default=200)
+
+
+class EndpointCreate(EndpointBase):
     @model_validator(mode="after")
     def validate_url(self) -> Self:
         parsed_url = urlparse(self.url)
@@ -55,13 +62,8 @@ class EndpointCreate(BaseModel):
 
         return self
 
-    check_frequency_seconds: int = Field(ge=120, default=120)
-    is_paused: bool = False
-    url: str
-    expected_status_code: int = Field(ge=100, le=599, default=200)
 
-
-class EndpointResponse(EndpointCreate):
+class EndpointResponse(EndpointBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
