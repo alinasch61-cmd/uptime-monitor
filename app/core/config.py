@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     database_url: str
     secret_key: str
     access_token_expires_minutes: int
+    redis_url: str
 
 
 settings = Settings()

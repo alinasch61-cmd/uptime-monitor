@@ -1,6 +1,7 @@
 from collections.abc import Sequence
+from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -51,6 +52,22 @@ class EndpointRepository:
             .order_by(EndpointModel.id)
         )
         return self.db.scalars(stmt).all()
+
+    def get_due_list(self) -> Sequence[EndpointModel]:
+        stmt = select(EndpointModel).where(
+            EndpointModel.next_check_at <= func.now(),
+            EndpointModel.is_paused.is_(False),
+        )
+        return self.db.scalars(stmt).all()
+
+    def calculate_next_check_time(self, endpoint: EndpointModel):
+        new_time = endpoint.next_check_at + timedelta(
+            seconds=endpoint.check_frequency_seconds
+        )
+        if new_time < datetime.now(tz=UTC):
+            return datetime.now(tz=UTC)
+
+        return new_time
 
     def delete(self, endpoint: EndpointModel) -> None:
         self.db.delete(endpoint)
