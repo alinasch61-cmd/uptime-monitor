@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import CheckConstraint, DateTime, Enum, ForeignKey, Index, String
+from sqlalchemy import CheckConstraint, DateTime, Enum, ForeignKey, Index, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -25,9 +25,11 @@ class CheckResult(Base):
     endpoint_id: Mapped[int] = mapped_column(
         ForeignKey("endpoint.id", ondelete="CASCADE")
     )
-    checked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+    checked_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
     latency_ms: Mapped[int] = mapped_column(nullable=True)
     status_code: Mapped[int] = mapped_column(nullable=True)
     result_status: Mapped[Status] = mapped_column(Enum(Status))
-    error_type: Mapped[str] = mapped_column(String(255))
+    error_type: Mapped[str] = mapped_column(String(255), nullable=True)
     endpoint: Mapped["Endpoint"] = relationship(back_populates="check_results")  # noqa: UP037
