@@ -39,10 +39,8 @@ class EndpointRepository:
 
         return endpoint
 
-    def get(self, endpoint_id: int, user_id: int) -> EndpointModel | None:
-        stmt = select(EndpointModel).where(
-            EndpointModel.id == endpoint_id, EndpointModel.user_id == user_id
-        )
+    def get(self, endpoint_id: int) -> EndpointModel | None:
+        stmt = select(EndpointModel).where(EndpointModel.id == endpoint_id)
         return self.db.scalars(stmt).first()
 
     def get_list(self, user_id: int) -> Sequence[EndpointModel]:

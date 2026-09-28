@@ -72,9 +72,9 @@ def read_endpoint(
     user: Annotated[User, Depends(require_authenticated_user)],
     endpoint_service: Annotated[EndpointRepository, Depends(get_endpoint_service)],
 ) -> EndpointResponse | None:
-    endpoint = endpoint_service.get(endpoint_id, user.id)
+    endpoint = endpoint_service.get(endpoint_id)
 
-    if endpoint is None:
+    if endpoint is None or endpoint.user_id != user.id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Endpoint not found"
         )
@@ -128,9 +128,9 @@ def update_endpoint(
     user: Annotated[User, Depends(require_authenticated_user)],
     endpoint_service: Annotated[EndpointRepository, Depends(get_endpoint_service)],
 ) -> EndpointResponse:
-    endpoint = endpoint_service.get(endpoint_id, user.id)
+    endpoint = endpoint_service.get(endpoint_id)
 
-    if endpoint is None:
+    if endpoint is None or endpoint.user_id != user.id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Endpoint not found"
         )
@@ -155,9 +155,9 @@ def delete_endpoint(
     user: Annotated[User, Depends(require_authenticated_user)],
     endpoint_service: Annotated[EndpointRepository, Depends(get_endpoint_service)],
 ) -> None:
-    endpoint = endpoint_service.get(endpoint_id, user.id)
+    endpoint = endpoint_service.get(endpoint_id)
 
-    if endpoint is None:
+    if endpoint is None or endpoint.user_id != user.id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Endpoint not found"
         )

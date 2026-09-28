@@ -13,6 +13,7 @@ dependencies = [
     "pyjwt>=2.14.0",
     "python-multipart>=0.0.32",
     "redis>=8.1.0",
+    "requests>=2.34.2",
     "rq>=2.12.0",
     "sqlalchemy>=2.0.52",
 ]
