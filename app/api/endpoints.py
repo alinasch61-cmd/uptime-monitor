@@ -8,9 +8,11 @@ from app.core.security import oauth2_scheme
 from app.db.session import get_db
 from app.models.endpoint import Endpoint as EndpointModel
 from app.models.user import User
-from app.schemas.check_result import CheckResultResponse, Status
+from app.schemas.check_result import CheckResultResponse
+from app.schemas.check_result import Status as CheckResultStatus
 from app.schemas.endpoint import EndpointCreate, EndpointResponse, EndpointUpdate
 from app.services.auth import get_current_user
+from app.services.check_result import CheckResultRepository
 from app.services.endpoint import EndpointExistError, EndpointRepository
 
 
@@ -38,6 +40,10 @@ def require_authenticated_user(
 
 def get_endpoint_service(db: Annotated[Session, Depends(get_db)]):
     return EndpointRepository(db)
+
+
+def get_check_result_service(db: Annotated[Session, Depends(get_db)]):
+    return CheckResultRepository(db)
 
 
 router = APIRouter(
@@ -165,19 +171,56 @@ def delete_endpoint(
     endpoint_service.delete(endpoint)
 
 
-@router.get("/{endpoint_id}/status", response_model=CheckResultResponse)
-def read_status(endpoint_id: Annotated[int, Path()]) -> CheckResultResponse:
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="This method is not implemented yet",
-    )
+@router.get(
+    "/{endpoint_id}/status",
+    response_model=CheckResultResponse,
+    responses={status.HTTP_404_NOT_FOUND: {"description": "Not found"}},
+)
+def read_status(
+    endpoint_id: Annotated[int, Path()],
+    user: Annotated[User, Depends(require_authenticated_user)],
+    endpoint_service: Annotated[EndpointRepository, Depends(get_endpoint_service)],
+    check_result_service: Annotated[
+        CheckResultRepository, Depends(get_check_result_service)
+    ],
+) -> CheckResultResponse | None:
+    endpoint = endpoint_service.get(endpoint_id=endpoint_id)
+
+    if endpoint is None or endpoint.user_id != user.id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Endpoint not found"
+        )
+
+    check_status = check_result_service.get_latest(endpoint_id=endpoint_id)
+    if check_status is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Status not available"
+        )
+
+    return CheckResultResponse.model_validate(check_status)
 
 
 @router.get("/{endpoint_id}/history", response_model=list[CheckResultResponse])
 def read_history(
     endpoint_id: Annotated[int, Path()],
-    limit: Annotated[int, Query(ge=10, le=100)] = 50,
+    user: Annotated[User, Depends(require_authenticated_user)],
+    endpoint_service: Annotated[EndpointRepository, Depends(get_endpoint_service)],
+    check_result_service: Annotated[
+        CheckResultRepository, Depends(get_check_result_service)
+    ],
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
-    filter: Annotated[Status | None, Query()] = None,
+    filter: Annotated[CheckResultStatus | None, Query()] = None,
 ) -> list[CheckResultResponse]:
-    return []
+    endpoint = endpoint_service.get(endpoint_id=endpoint_id)
+
+    if endpoint is None or endpoint.user_id != user.id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Endpoint not found"
+        )
+
+    status_check_list = check_result_service.get_list(
+        endpoint_id, limit=limit, offset=offset, filter=filter
+    )
+
+    return [CheckResultResponse.model_validate(check) for check in status_check_list]

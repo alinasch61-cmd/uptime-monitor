@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import Enum
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class Status(Enum):
@@ -19,8 +19,10 @@ class NormalizedError(Enum):
 
 
 class CheckResultResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     checked_at: datetime
     latency_ms: int | None
     status_code: int | None
-    result_status: Status | None
+    result_status: Status
     error_type: NormalizedError | None
