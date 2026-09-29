@@ -2,6 +2,7 @@ import ipaddress
 import socket
 from datetime import datetime
 from enum import Enum
+from socket import gaierror
 from typing import Self
 from urllib.parse import urlparse
 
@@ -22,10 +23,10 @@ class EndpointUpdate(BaseModel):
 
 
 class EndpointBase(BaseModel):
-    check_frequency_seconds: int = Field(ge=120, default=120)
+    check_frequency_seconds: int = Field(ge=120)
     is_paused: bool = False
-    url: str
-    expected_status_code: int = Field(ge=100, le=599, default=200)
+    url: str = Field(max_length=2000)
+    expected_status_code: int = Field(ge=100, le=599)
 
 
 class EndpointCreate(EndpointBase):
@@ -39,11 +40,14 @@ class EndpointCreate(EndpointBase):
         if not parsed_url.hostname:
             raise ValueError("Hostname is not provided")
 
-        info_lines = socket.getaddrinfo(
-            parsed_url.hostname,
-            parsed_url.port or (443 if parsed_url.scheme == "https" else 80),
-            type=socket.SOCK_STREAM,
-        )
+        try:
+            info_lines = socket.getaddrinfo(
+                parsed_url.hostname,
+                parsed_url.port or (443 if parsed_url.scheme == "https" else 80),
+                type=socket.SOCK_STREAM,
+            )
+        except gaierror:
+            raise ValueError("Unable to resolve address")
 
         for info in info_lines:
             ip = ipaddress.ip_address(info[4][0])

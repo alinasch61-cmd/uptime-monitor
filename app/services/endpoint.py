@@ -25,6 +25,7 @@ class EndpointRepository:
             self.db.refresh(endpoint)
         except IntegrityError as exc:
             if getattr(exc.orig, "sqlstate", None) == _UNIQUE_VIOLATION_SQLSTATE:
+                self.db.rollback()
                 raise EndpointExistError(
                     "An endpoint with this url and status already exists"
                 )
@@ -62,8 +63,10 @@ class EndpointRepository:
         new_time = endpoint.next_check_at + timedelta(
             seconds=endpoint.check_frequency_seconds
         )
-        if new_time < datetime.now(tz=UTC):
-            return datetime.now(tz=UTC)
+
+        now = datetime.now(tz=UTC)
+        while new_time <= now:
+            new_time = new_time + timedelta(seconds=endpoint.check_frequency_seconds)
 
         return new_time
 

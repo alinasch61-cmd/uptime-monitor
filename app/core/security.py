@@ -31,7 +31,8 @@ _JWT_ALGORITHM = "HS256"
 def create_access_token(username: str) -> str:
     token_data = {
         "sub": username,
-        "exp": datetime.now(tz=UTC) + timedelta(settings.access_token_expires_minutes),
+        "exp": datetime.now(tz=UTC)
+        + timedelta(minutes=settings.access_token_expires_minutes),
     }
 
     return jwt.encode(token_data, settings.secret_key, algorithm=_JWT_ALGORITHM)
