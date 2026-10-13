@@ -59,7 +59,7 @@ class EndpointRepository:
         )
         return self.db.scalars(stmt).all()
 
-    def calculate_next_check_time(self, endpoint: EndpointModel):
+    def calculate_next_check_time(self, endpoint: EndpointModel) -> datetime:
         new_time = endpoint.next_check_at + timedelta(
             seconds=endpoint.check_frequency_seconds
         )

@@ -20,8 +20,17 @@ def is_dns_error(exc: requests.exceptions.ConnectionError) -> bool:
     return False
 
 
+def classify_status(actual_status_code: int, expected_status_code: int) -> Status:
+    if actual_status_code == expected_status_code:
+        return Status.GREEN
+
+    if actual_status_code // 100 == expected_status_code // 100:
+        return Status.ORANGE
+
+    return Status.RED
+
+
 def request_endpoint(url: str, expected_status_code: int) -> dict[str, Any]:
-    status: Status = Status.RED
     error_type: str | None = None
     elapsed_time: int | None = None
     status_code: int | None = None
@@ -33,10 +42,6 @@ def request_endpoint(url: str, expected_status_code: int) -> dict[str, Any]:
             elapsed_time = round(response.elapsed.total_seconds() * 1000)
             status_code = response.status_code
 
-        if response.status_code == expected_status_code:
-            status = Status.GREEN
-        elif response.status_code // 100 == expected_status_code // 100:
-            status = Status.ORANGE
     except requests.exceptions.SSLError:
         error_type = NormalizedError.TLS_ERROR.value
     except requests.exceptions.Timeout:
@@ -52,7 +57,9 @@ def request_endpoint(url: str, expected_status_code: int) -> dict[str, Any]:
     return {
         "latency_ms": elapsed_time,
         "status_code": status_code,
-        "result_status": status,
+        "result_status": Status.RED
+        if status_code is None
+        else classify_status(status_code, expected_status_code),
         "error_type": error_type,
     }
 
