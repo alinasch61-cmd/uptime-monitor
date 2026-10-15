@@ -1,14 +1,16 @@
 import os
 from collections.abc import Generator
+from pathlib import Path
 from uuid import uuid4
 
 import pytest
+from alembic.config import Config
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
 
+from alembic import command
 from app.core.config import settings
-from app.db.base import Base
 from app.db.session import get_db
 from app.main import app
 
@@ -25,7 +27,15 @@ def db() -> Generator[Session]:
                 schema = f"test_registration_{uuid4().hex}"
                 connection.execute(text(f'CREATE SCHEMA "{schema}"'))
                 connection.execute(text(f'SET LOCAL search_path TO "{schema}"'))
-                Base.metadata.create_all(connection)
+                alembic_config = Config(
+                    str(Path(__file__).resolve().parents[3] / "alembic.ini")
+                )
+                alembic_config.attributes.update(
+                    connection=connection,
+                    version_table_schema=schema,
+                    configure_logger=False,
+                )
+                command.upgrade(alembic_config, "head")
                 with Session(
                     bind=connection, join_transaction_mode="create_savepoint"
                 ) as session:
