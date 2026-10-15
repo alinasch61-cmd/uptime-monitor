@@ -30,22 +30,6 @@ def resolve_test_urls(monkeypatch: pytest.MonkeyPatch):
     )
 
 
-def register_and_log_in(
-    client: TestClient, username: str
-) -> tuple[int, dict[str, str]]:
-    credentials = {"username": username, "password": "secret_password"}
-    registration = client.post("/auth/register", json=credentials)
-    login = client.post("/auth/login", data=credentials)
-    return registration.json()["id"], {
-        "Authorization": f"Bearer {login.json()['access_token']}"
-    }
-
-
-@pytest.fixture
-def authenticated_user(client: TestClient) -> tuple[int, dict[str, str]]:
-    return register_and_log_in(client, "endpoint_owner")
-
-
 @pytest.fixture
 def endpoint_payload() -> dict[str, str | int]:
     return {
@@ -183,10 +167,11 @@ def test_another_user_can_create_same_endpoint(
     client: TestClient,
     db: Session,
     authenticated_user: tuple[int, dict[str, str]],
+    other_authenticated_user: tuple[int, dict[str, str]],
     endpoint_payload: dict[str, str | int],
 ):
     first_user_id, first_headers = authenticated_user
-    second_user_id, second_headers = register_and_log_in(client, "another_owner")
+    second_user_id, second_headers = other_authenticated_user
 
     first = client.post("/endpoints/", json=endpoint_payload, headers=first_headers)
     second = client.post("/endpoints/", json=endpoint_payload, headers=second_headers)

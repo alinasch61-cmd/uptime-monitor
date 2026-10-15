@@ -59,3 +59,24 @@ def client(db: Session) -> Generator[TestClient]:
     finally:
         app.dependency_overrides.clear()
         app.dependency_overrides.update(previous_overrides)
+
+
+def register_and_log_in(
+    client: TestClient, username: str
+) -> tuple[int, dict[str, str]]:
+    credentials = {"username": username, "password": "secret_password"}
+    registration = client.post("/auth/register", json=credentials)
+    login = client.post("/auth/login", data=credentials)
+    return registration.json()["id"], {
+        "Authorization": f"Bearer {login.json()['access_token']}"
+    }
+
+
+@pytest.fixture
+def authenticated_user(client: TestClient) -> tuple[int, dict[str, str]]:
+    return register_and_log_in(client, "endpoint_owner")
+
+
+@pytest.fixture
+def other_authenticated_user(client: TestClient) -> tuple[int, dict[str, str]]:
+    return register_and_log_in(client, "other_owner")

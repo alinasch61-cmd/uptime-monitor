@@ -11,16 +11,6 @@ FIXED_NOW = datetime(2026, 10, 15, 12, 0, tzinfo=UTC)
 
 
 @pytest.fixture
-def authenticated_user(client: TestClient) -> tuple[int, dict[str, str]]:
-    credentials = {"username": "patch_owner", "password": "secret_password"}
-    registration = client.post("/auth/register", json=credentials)
-    login = client.post("/auth/login", data=credentials)
-    return registration.json()["id"], {
-        "Authorization": f"Bearer {login.json()['access_token']}"
-    }
-
-
-@pytest.fixture
 def endpoint(db: Session, authenticated_user: tuple[int, dict[str, str]]) -> Endpoint:
     user_id, _ = authenticated_user
     endpoint = Endpoint(
@@ -80,15 +70,13 @@ def test_patch_endpoint_owned_by_another_user_returns_404(
     client: TestClient,
     db: Session,
     authenticated_user: tuple[int, dict[str, str]],
+    other_authenticated_user: tuple[int, dict[str, str]],
     endpoint: Endpoint,
     changes: dict,
 ):
     _, owner_headers = authenticated_user
     original = client.get(f"/endpoints/{endpoint.id}", headers=owner_headers).json()
-    credentials = {"username": "another_user", "password": "another_password"}
-    client.post("/auth/register", json=credentials)
-    login = client.post("/auth/login", data=credentials)
-    other_headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+    _, other_headers = other_authenticated_user
 
     response = client.patch(
         f"/endpoints/{endpoint.id}", json=changes, headers=other_headers
