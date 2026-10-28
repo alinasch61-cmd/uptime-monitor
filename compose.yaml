@@ -10,6 +10,8 @@ services:
                 condition: service_completed_successfully
         ports:
             - "8000:8000"
+        volumes:
+            - ./logs:/app/logs
         command: fastapi run app/main.py --port 8000
 
     worker:
@@ -23,6 +25,8 @@ services:
                 condition: service_healthy
             migrate:
                 condition: service_completed_successfully
+        volumes:
+            - ./logs:/app/logs
         command: rq worker api_monitor
 
     scheduler:
@@ -36,6 +40,8 @@ services:
                 condition: service_started
             migrate:
                 condition: service_completed_successfully
+        volumes:
+            - ./logs:/app/logs
         command: python -m app.workers.scheduler
 
     redis:

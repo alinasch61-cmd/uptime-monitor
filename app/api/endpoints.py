@@ -4,6 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, Body, Depends, HTTPException, Path, Query, status
 from sqlalchemy.orm import Session
 
+from app.core.logging import get_logger, log_errors
 from app.core.security import oauth2_scheme
 from app.db.session import get_db
 from app.models.endpoint import Endpoint as EndpointModel
@@ -14,6 +15,8 @@ from app.schemas.endpoint import EndpointCreate, EndpointResponse, EndpointUpdat
 from app.services.auth import get_current_user
 from app.services.check_result import CheckResultRepository
 from app.services.endpoint import EndpointExistError, EndpointRepository
+
+logger = get_logger("endpoint_handler")
 
 
 def require_authenticated_user(
@@ -58,11 +61,13 @@ router = APIRouter(
 
 
 @router.get("/", response_model=list[EndpointResponse])
+@log_errors(logger, ignored=(HTTPException,))
 def read_endpoint_list(
     user: Annotated[User, Depends(require_authenticated_user)],
     endpoint_service: Annotated[EndpointRepository, Depends(get_endpoint_service)],
 ) -> Sequence[EndpointResponse]:
     endpoint_collection = endpoint_service.get_list(user_id=user.id)
+    logger.info("Read endpoints for user %s", user.id)
     return [
         EndpointResponse.model_validate(endpoint) for endpoint in endpoint_collection
     ]
@@ -73,6 +78,7 @@ def read_endpoint_list(
     response_model=EndpointResponse | None,
     responses={status.HTTP_404_NOT_FOUND: {"description": "Endpoint not found"}},
 )
+@log_errors(logger, ignored=(HTTPException,))
 def read_endpoint(
     endpoint_id: Annotated[int, Path()],
     user: Annotated[User, Depends(require_authenticated_user)],
@@ -85,6 +91,7 @@ def read_endpoint(
             status_code=status.HTTP_404_NOT_FOUND, detail="Endpoint not found"
         )
 
+    logger.info("Read endpoint %s for user %s", endpoint_id, user.id)
     return EndpointResponse.model_validate(endpoint)
 
 
@@ -98,6 +105,7 @@ def read_endpoint(
         }
     },
 )
+@log_errors(logger, ignored=(HTTPException,))
 def write_endpoint(
     endpoint: Annotated[EndpointCreate, Body()],
     user: Annotated[User, Depends(require_authenticated_user)],
@@ -119,6 +127,7 @@ def write_endpoint(
             detail="Endpoint with this URL and status code already exists",
         )
 
+    logger.info("Created endpoint %s for user %s", new_endpoint.id, user.id)
     return EndpointResponse.model_validate(new_endpoint)
 
 
@@ -128,6 +137,7 @@ def write_endpoint(
         status.HTTP_404_NOT_FOUND: {"description": "Endpoint not found"},
     },
 )
+@log_errors(logger, ignored=(HTTPException,))
 def update_endpoint(
     endpoint_id: Annotated[int, Path()],
     new_vals: Annotated[EndpointUpdate, Body()],
@@ -148,6 +158,7 @@ def update_endpoint(
         endpoint.is_paused = new_vals.is_paused
 
     updated_endpoint = endpoint_service.patch(endpoint)
+    logger.info("Updated endpoint %s for user %s", endpoint_id, user.id)
     return EndpointResponse.model_validate(updated_endpoint)
 
 
@@ -156,6 +167,7 @@ def update_endpoint(
     status_code=204,
     responses={status.HTTP_404_NOT_FOUND: {"description": "Endpoint not found"}},
 )
+@log_errors(logger, ignored=(HTTPException,))
 def delete_endpoint(
     endpoint_id: Annotated[int, Path()],
     user: Annotated[User, Depends(require_authenticated_user)],
@@ -169,6 +181,7 @@ def delete_endpoint(
         )
 
     endpoint_service.delete(endpoint)
+    logger.info("Deleted endpoint %s for user %s", endpoint_id, user.id)
 
 
 @router.get(
@@ -176,6 +189,7 @@ def delete_endpoint(
     response_model=CheckResultResponse,
     responses={status.HTTP_404_NOT_FOUND: {"description": "Not found"}},
 )
+@log_errors(logger, ignored=(HTTPException,))
 def read_status(
     endpoint_id: Annotated[int, Path()],
     user: Annotated[User, Depends(require_authenticated_user)],
@@ -197,10 +211,12 @@ def read_status(
             status_code=status.HTTP_404_NOT_FOUND, detail="Status not available"
         )
 
+    logger.info("Read status for endpoint %s for user %s", endpoint_id, user.id)
     return CheckResultResponse.model_validate(check_status)
 
 
 @router.get("/{endpoint_id}/history", response_model=list[CheckResultResponse])
+@log_errors(logger, ignored=(HTTPException,))
 def read_history(
     endpoint_id: Annotated[int, Path()],
     user: Annotated[User, Depends(require_authenticated_user)],
@@ -223,4 +239,5 @@ def read_history(
         endpoint_id, limit=limit, offset=offset, filter=filter
     )
 
+    logger.info("Read history for endpoint %s for user %s", endpoint_id, user.id)
     return [CheckResultResponse.model_validate(check) for check in status_check_list]

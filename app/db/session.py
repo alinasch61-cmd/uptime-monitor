@@ -8,7 +8,7 @@ from app.models.check_result import CheckResult  # noqa: F401
 from app.models.endpoint import Endpoint  # noqa: F401
 from app.models.user import User  # noqa: F401
 
-engine = create_engine(settings.database_url, echo=True, pool_pre_ping=True)
+engine = create_engine(settings.database_url, echo=False, pool_pre_ping=True)
 SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
 
 

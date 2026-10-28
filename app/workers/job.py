@@ -3,11 +3,14 @@ from typing import Any
 import requests
 from urllib3.exceptions import MaxRetryError, NameResolutionError
 
+from app.core.logging import get_logger, log_errors
 from app.db.session import SessionLocal
 from app.models.check_result import CheckResult
 from app.schemas.check_result import NormalizedError, Status
 from app.services.check_result import CheckResultRepository
 from app.services.endpoint import EndpointRepository
+
+logger = get_logger("job")
 
 
 def is_dns_error(exc: requests.exceptions.ConnectionError) -> bool:
@@ -64,6 +67,7 @@ def request_endpoint(url: str, expected_status_code: int) -> dict[str, Any]:
     }
 
 
+@log_errors(logger)
 def run_endpoint_check(endpoint_id: int) -> None:
     with SessionLocal() as session:
         endpoint = EndpointRepository(session=session).get(endpoint_id=endpoint_id)
@@ -82,3 +86,17 @@ def run_endpoint_check(endpoint_id: int) -> None:
         check_res = CheckResult(endpoint_id=endpoint_id, **request_result)
         check_repo = CheckResultRepository(session=session)
         check_repo.create(check_res)
+
+    if request_result["error_type"] is not None:
+        logger.error(
+            "Check failed for endpoint %s: %s",
+            endpoint_id,
+            request_result["error_type"],
+        )
+    else:
+        logger.info(
+            "Checked endpoint %s: status %s, HTTP %s",
+            endpoint_id,
+            request_result["result_status"].value,
+            request_result["status_code"],
+        )

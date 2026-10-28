@@ -17,7 +17,9 @@ from app.main import app
 
 @pytest.fixture
 def db() -> Generator[Session]:
-    engine = create_engine(os.getenv("TEST_DATABASE_URL", settings.database_url))
+    engine = create_engine(
+        os.getenv("TEST_DATABASE_URL", settings.database_url), echo=False
+    )
     # Transactional DDL and savepoints keep application commits isolated from
     # existing data and remove the entire test schema on teardown.
     try:
