@@ -1,6 +1,8 @@
 from typing import Any
 
 import requests
+from psycopg.errors import ForeignKeyViolation
+from sqlalchemy.exc import IntegrityError
 from urllib3.exceptions import MaxRetryError, NameResolutionError
 
 from app.core.logging import get_logger, log_errors
@@ -85,7 +87,18 @@ def run_endpoint_check(endpoint_id: int) -> None:
     with SessionLocal() as session:
         check_res = CheckResult(endpoint_id=endpoint_id, **request_result)
         check_repo = CheckResultRepository(session=session)
-        check_repo.create(check_res)
+        try:
+            check_repo.create(check_res)
+        except IntegrityError as exc:
+            session.rollback()
+            if (
+                isinstance(exc.orig, ForeignKeyViolation)
+                and exc.orig.diag.constraint_name == "check_result_endpoint_id_fkey"
+                and exc.orig.diag.table_name == "check_result"
+            ):
+                logger.info("Skipped check result for deleted endpoint %s", endpoint_id)
+                return
+            raise
 
     if request_result["error_type"] is not None:
         logger.error(

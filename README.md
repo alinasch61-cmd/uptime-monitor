@@ -94,6 +94,10 @@ docker compose ps -a
 docker compose logs -f api scheduler worker
 ```
 
+Application logs write `INFO` messages to stdout and `ERROR` messages to stderr.
+Each entry includes the timestamp, level, and service name (endpoint handler, scheduler, or job).
+Docker collects these streams; no log files or log volume mounts are needed.
+
 Compose starts PostgreSQL and Redis, runs `alembic upgrade head` in the one-off `migrate` service,
 then starts the API, scheduler, and worker after migrations succeed.
 A successful `migrate` container exits with code `0`; it does not stay running.

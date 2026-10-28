@@ -1,10 +1,9 @@
 import logging
+import sys
 from collections.abc import Callable
 from functools import wraps
-from pathlib import Path
 from typing import ParamSpec, TypeVar
 
-LOG_DIRECTORY = Path(__file__).resolve().parents[2] / "logs"
 P = ParamSpec("P")
 R = TypeVar("R")
 
@@ -12,12 +11,18 @@ R = TypeVar("R")
 def get_logger(service: str) -> logging.Logger:
     logger = logging.getLogger(f"uptime_monitor.{service}")
     if not logger.handlers:
-        LOG_DIRECTORY.mkdir(parents=True, exist_ok=True)
-        handler = logging.FileHandler(
-            LOG_DIRECTORY / f"{service}.log", encoding="utf-8"
-        )
-        handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
-        logger.addHandler(handler)
+        formatter = logging.Formatter("%(asctime)s %(levelname)s %(name)s %(message)s")
+        stdout_handler = logging.StreamHandler(sys.stdout)
+        stdout_handler.setLevel(logging.INFO)
+        stdout_handler.addFilter(lambda record: record.levelno < logging.ERROR)
+        stdout_handler.setFormatter(formatter)
+
+        stderr_handler = logging.StreamHandler(sys.stderr)
+        stderr_handler.setLevel(logging.ERROR)
+        stderr_handler.setFormatter(formatter)
+
+        logger.addHandler(stdout_handler)
+        logger.addHandler(stderr_handler)
         logger.setLevel(logging.INFO)
         logger.propagate = False
     return logger
