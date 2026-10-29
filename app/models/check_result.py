@@ -18,7 +18,12 @@ class CheckResult(Base):
             "status_code >= 100 AND status_code <= 599",
             name="ck_check_point_status_code_range",
         ),
-        Index("ix_endpoint_id_checked_at", "endpoint_id", "checked_at"),
+        Index(
+            "ix_check_result_id_checked_at_endpoint_id",
+            "endpoint_id",
+            "checked_at",
+            "id",
+        ),
         Index("ix_checked_at", "checked_at", postgresql_using="brin"),
     )
     id: Mapped[int] = mapped_column(primary_key=True)

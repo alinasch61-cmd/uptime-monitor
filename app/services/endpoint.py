@@ -55,7 +55,7 @@ class EndpointRepository:
     def get_due_list(self) -> Sequence[EndpointModel]:
         stmt = select(EndpointModel).where(
             EndpointModel.next_check_at <= func.now(),
-            EndpointModel.is_paused.is_(False),
+            EndpointModel.is_paused == False,
         )
         return self.db.scalars(stmt).all()
 

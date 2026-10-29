@@ -1,6 +1,8 @@
 services:    
     api:
         build: .
+        volumes:
+            - ./alembic/versions:/app/alembic/versions
         env_file:
             - .env
         depends_on:
